@@ -274,6 +274,13 @@ export interface TestDependenciesResponse {
   meta: TestDepGraphMeta;
 }
 
+export interface ResolveAndTestFactsResponse {
+  token?: string;
+  components?: any; // todo delete me once adaptor is done
+  result?: TestDependenciesResult;
+  meta?: TestDepGraphMeta;
+}
+
 export interface Ignores {
   [path: string]: {
     paths: string[][];
