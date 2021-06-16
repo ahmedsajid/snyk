@@ -1,20 +1,19 @@
 FROM node:14-slim
 
+ARG golang_version=1.13.12
+ARG golang_checksum=9cacc6653563771b458c13056265aa0c21b8a23ca9408278484e4efde4160618
+
 MAINTAINER Snyk Ltd
 
 WORKDIR /home/node
+
+ENV GOLANG_VERSION ${golang_version}
+ENV GOLANG_CHECKSUM ${golang_checksum}
+
 ENV HOME /home/node
-
-# Install snyk cli and clean up
-RUN apt-get update && \
-    apt-get install -y jq git && \
-    npm install --global snyk snyk-to-html && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    chmod -R a+wrx /home/node
-
 # The path at which the project is mounted (-v runtime arg)
 ENV PROJECT_PATH /project
+ENV PATH /usr/local/go/bin:$PATH
 
 COPY docker-entrypoint.sh .
 COPY snyk_report.css .
@@ -23,6 +22,23 @@ ENV SNYK_INTEGRATION_NAME DOCKER_SNYK_CLI
 # This image is currently being used for nuget, composer and ruby
 # If we see a tons of usage, we can split the analytics
 ENV SNYK_INTEGRATION_VERSION npm
+
+# Install snyk cli and clean up
+RUN apt-get update && \
+    apt-get install -y jq git wget && \
+    npm install --global snyk snyk-to-html && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    chmod -R a+wrx /home/node && \
+    url="https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" && \
+    wget -O go.tgz "$url" && \
+    echo "${GOLANG_CHECKSUM} *go.tgz" | sha256sum -c - && \
+    tar -C /usr/local -xzf go.tgz && \
+    rm go.tgz && \
+    export PATH="/usr/local/go/bin:$PATH" && \
+    go version && \
+    rm -rf /var/lib/cache /var/lib/log /var/lib/apt/lists/*
+
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
